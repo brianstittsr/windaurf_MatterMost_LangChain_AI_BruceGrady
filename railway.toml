@@ -1,0 +1,49 @@
+[build]
+builder = "dockerfile"
+
+[deploy]
+healthcheckPath = "/api/v4/system/ping"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[[services]]
+name = "mattermost"
+
+[services.variables]
+MM_SQLSETTINGS_DRIVERNAME = "postgres"
+MM_SERVICESETTINGS_LISTENADDRESS = ":8000"
+MM_SERVICESETTINGS_ENABLELOCALMODE = "false"
+MM_SERVICESETTINGS_ENABLEDEVELOPER = "false"
+MM_TEAMSETTINGS_ENABLETEAMCREATION = "true"
+MM_TEAMSETTINGS_ENABLEUSERCREATION = "true"
+MM_PASSWORDSETTINGS_MINIMUMLENGTH = "8"
+MM_FILESETTINGS_MAXFILESIZE = "52428800"
+MM_SERVICESETTINGS_ENABLEINCOMINGWEBHOOKS = "true"
+MM_SERVICESETTINGS_ENABLEOUTGOINGWEBHOOKS = "true"
+MM_SERVICESETTINGS_ENABLECOMMANDS = "true"
+
+[[services]]
+name = "openai-bot"
+source = "openai-bot"
+
+[services.variables]
+OPENAI_API_KEY = "${{OPENAI_API_KEY}}"
+MATTERMOST_URL = "${{RAILWAY_STATIC_URL}}"
+MATTERMOST_TOKEN = "${{MATTERMOST_TOKEN}}"
+BOT_USERNAME = "aibot"
+OPENAI_MODEL = "gpt-4"
+MAX_TOKENS = "1000"
+TEMPERATURE = "0.7"
+
+[[services]]
+name = "langchain-automation"
+source = "langchain-automation"
+
+[services.variables]
+OPENAI_API_KEY = "${{OPENAI_API_KEY}}"
+MATTERMOST_URL = "${{RAILWAY_STATIC_URL}}"
+MATTERMOST_TOKEN = "${{MATTERMOST_TOKEN}}"
+OPENAI_MODEL = "gpt-4"
+TEMPERATURE = "0.7"
+SECRET_KEY = "${{SECRET_KEY}}"

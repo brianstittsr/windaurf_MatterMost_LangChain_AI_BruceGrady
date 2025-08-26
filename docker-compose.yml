@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mattermost_password}
+      POSTGRES_USER: ${POSTGRES_USER:-mattermost}
+      POSTGRES_DB: ${POSTGRES_DB:-mattermost}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  mattermost:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      MM_SQLSETTINGS_DRIVERNAME: postgres
+      MM_SQLSETTINGS_DATASOURCE: "postgres://${POSTGRES_USER:-mattermost}:${POSTGRES_PASSWORD:-mattermost_password}@postgres:5432/${POSTGRES_DB:-mattermost}?sslmode=disable&connect_timeout=10"
+      MM_SERVICESETTINGS_SITEURL: ${SITE_URL:-http://localhost:8000}
+      MM_SERVICESETTINGS_LISTENADDRESS: ":8000"
+      MM_SERVICESETTINGS_ENABLELOCALMODE: false
+      MM_SERVICESETTINGS_ENABLEDEVELOPER: false
+      MM_TEAMSETTINGS_ENABLETEAMCREATION: true
+      MM_TEAMSETTINGS_ENABLEUSERCREATION: true
+      MM_PASSWORDSETTINGS_MINIMUMLENGTH: 8
+      MM_FILESETTINGS_MAXFILESIZE: 52428800
+      MM_SERVICESETTINGS_ENABLEINCOMINGWEBHOOKS: true
+      MM_SERVICESETTINGS_ENABLEOUTGOINGWEBHOOKS: true
+      MM_SERVICESETTINGS_ENABLECOMMANDS: true
+    ports:
+      - "8000:8000"
+    volumes:
+      - mattermost_data:/mattermost/data
+      - mattermost_logs:/mattermost/logs
+      - mattermost_config:/mattermost/config
+      - mattermost_plugins:/mattermost/plugins
+      - mattermost_client_plugins:/mattermost/client/plugins
+
+  openai-bot:
+    build: ./openai-bot
+    restart: unless-stopped
+    depends_on:
+      - mattermost
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      MATTERMOST_URL: http://mattermost:8000
+      MATTERMOST_TOKEN: ${MATTERMOST_TOKEN}
+      BOT_USERNAME: ${BOT_USERNAME:-aibot}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4}
+      MAX_TOKENS: ${MAX_TOKENS:-1000}
+      TEMPERATURE: ${TEMPERATURE:-0.7}
+      DEBUG: ${DEBUG:-false}
+    ports:
+      - "5000:5000"
+
+  langchain-automation:
+    build: ./langchain-automation
+    restart: unless-stopped
+    depends_on:
+      - mattermost
+      - openai-bot
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      MATTERMOST_URL: http://mattermost:8000
+      MATTERMOST_TOKEN: ${MATTERMOST_TOKEN}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4}
+      TEMPERATURE: ${TEMPERATURE:-0.7}
+      DATABASE_PATH: /app/data/workflows.db
+      SECRET_KEY: ${SECRET_KEY:-langchain-automation-secret}
+      DEBUG: ${DEBUG:-false}
+    ports:
+      - "5001:5001"
+    volumes:
+      - automation_data:/app/data
+
+volumes:
+  postgres_data:
+  mattermost_data:
+  mattermost_logs:
+  mattermost_config:
+  mattermost_plugins:
+  mattermost_client_plugins:
+  automation_data:
