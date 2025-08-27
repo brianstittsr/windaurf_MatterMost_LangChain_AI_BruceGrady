@@ -1,9 +1,8 @@
-# Main Mattermost service configuration
 [build]
 builder = "dockerfile"
 
 [deploy]
-healthcheckPath = "/api/v4/system/ping"
+healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
