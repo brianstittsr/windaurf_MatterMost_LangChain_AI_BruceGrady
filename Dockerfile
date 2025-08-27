@@ -1,5 +1,10 @@
 FROM mattermost/mattermost-team-edition:latest
 
+# Install curl for health checks
+USER root
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+USER 2000
+
 # Set environment variables
 ENV MM_SQLSETTINGS_DRIVERNAME=postgres
 ENV MM_SQLSETTINGS_DATASOURCE=""
@@ -18,6 +23,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8000/api/v4/system/ping || exit 1
 
-# Use the default entrypoint from the base image
-ENTRYPOINT ["/entrypoint.sh"]
+# Use the correct command for Mattermost
 CMD ["mattermost"]
