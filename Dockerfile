@@ -1,8 +1,8 @@
 FROM mattermost/mattermost-team-edition:latest
 
-# Install curl for health checks
+# Install curl for health checks (Alpine-based image)
 USER root
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache curl
 USER 2000
 
 # Set environment variables
@@ -19,9 +19,9 @@ ENV MM_SERVICESETTINGS_ENABLECOMMANDS=true
 # Expose port
 EXPOSE 8000
 
-# Health check for Railway
+# Health check for Railway (using wget as fallback if curl fails)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8000/api/v4/system/ping || exit 1
+    CMD curl -f http://localhost:8000/api/v4/system/ping || wget --no-verbose --tries=1 --spider http://localhost:8000/api/v4/system/ping || exit 1
 
 # Use the correct command for Mattermost
 CMD ["mattermost"]
